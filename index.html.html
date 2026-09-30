@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora TFG CKD-EPI 2021 & Clasificación KDIGO</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Chart.js for visualization -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        /* Custom styles for smooth transitions */
+        .kdigo-badge {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .btn-toggle-active {
+            box-shadow: 0 4px 14px 0 rgba(14, 165, 233, 0.39);
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col justify-between">
+
+    <!-- Header -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-50">
+        <div class="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="bg-sky-500 text-white p-2 rounded-xl shadow-md">
+                    <i data-lucide="activity" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg leading-tight text-slate-900">Calculadora TFG / eGFR</h1>
+                    <p class="text-xs font-semibold text-sky-700">Herramienta elaborada por Dr. Juan Pablo Aldana Sulú</p>
+                    <p class="text-[11px] text-slate-400 font-medium">Fórmula CKD-EPI 2021 (Sin ajuste de raza)</p>
+                </div>
+            </div>
+            <div class="hidden sm:flex items-center space-x-2 text-xs font-semibold text-slate-500 bg-slate-100 px-3 py-1.5 rounded-full">
+                <i data-lucide="shield-check" class="w-4 h-4 text-emerald-500"></i>
+                <span>Criterio Clínico KDIGO</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-4xl mx-auto px-4 py-6 w-full flex-grow grid grid-cols-1 md:grid-cols-12 gap-6">
+
+        <!-- Calculator Form (Left/Top) -->
+        <section class="md:col-span-6 lg:col-span-5 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col justify-between">
+            <div>
+                <h2 class="text-base font-bold text-slate-800 mb-4 flex items-center gap-2">
+                    <i data-lucide="sliders" class="w-5 h-5 text-sky-500"></i>
+                    Parámetros del Paciente
+                </h2>
+
+                <form id="tfgForm" onsubmit="return false;" class="space-y-5">
+                    
+                    <!-- Sex selection -->
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
+                            Sexo Biológico asignado al nacer
+                        </label>
+                        <div class="grid grid-cols-2 gap-3">
+                            <button type="button" id="btnFemale" onclick="selectSex('female')" 
+                                class="flex items-center justify-center gap-2 py-3 px-4 rounded-xl border-2 font-medium transition-all text-slate-600 border-slate-200 hover:border-slate-300">
+                                <i data-lucide="venus" class="w-5 h-5 text-pink-500"></i>
+                                <span>Mujer</span>
+                            </button>
+                            <button type="button" id="btnMale" onclick="selectSex('male')" 
+                                class="flex items-center justify-center gap-2 py-3 px-4 rounded-xl border-2 font-medium transition-all text-slate-600 border-slate-200 hover:border-slate-300">
+                                <i data-lucide="mars" class="w-5 h-5 text-sky-500"></i>
+                                <span>Hombre</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Age input -->
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <label for="age" class="block text-xs font-bold uppercase tracking-wider text-slate-500">
+                                Edad
+                            </label>
+                            <span class="text-xs text-slate-400">Años (18-120)</span>
+                        </div>
+                        <div class="relative rounded-xl shadow-sm">
+                            <input type="number" id="age" min="18" max="120" placeholder="Ej. 45"
+                                class="w-full pl-4 pr-12 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent font-semibold text-lg text-slate-800 transition-all placeholder:font-normal placeholder:text-slate-300"
+                                oninput="calculateTFG()">
+                            <div class="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-slate-400 font-medium text-sm">
+                                años
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Creatinine input -->
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <label for="creatinine" class="block text-xs font-bold uppercase tracking-wider text-slate-500">
+                                Creatinina Sérica
+                            </label>
+                            <span class="text-xs text-slate-400">mg/dL</span>
+                        </div>
+                        <div class="relative rounded-xl shadow-sm">
+                            <input type="number" id="creatinine" step="0.01" min="0.1" max="15" placeholder="Ej. 0.90"
+                                class="w-full pl-4 pr-16 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent font-semibold text-lg text-slate-800 transition-all placeholder:font-normal placeholder:text-slate-300"
+                                oninput="calculateTFG()">
+                            <div class="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none text-slate-400 font-medium text-sm">
+                                mg/dL
+                            </div>
+                        </div>
+                        <!-- Quick step buttons for mobile precision -->
+                        <div class="flex gap-2 mt-2">
+                            <button type="button" onclick="adjustCreatinine(-0.1)" class="flex-1 py-1.5 bg-slate-100 hover:bg-slate-200 rounded-lg text-xs font-bold text-slate-600 transition-colors">-0.1</button>
+                            <button type="button" onclick="adjustCreatinine(-0.01)" class="flex-1 py-1.5 bg-slate-100 hover:bg-slate-200 rounded-lg text-xs font-bold text-slate-600 transition-colors">-0.01</button>
+                            <button type="button" onclick="adjustCreatinine(0.01)" class="flex-1 py-1.5 bg-slate-100 hover:bg-slate-200 rounded-lg text-xs font-bold text-slate-600 transition-colors">+0.01</button>
+                            <button type="button" onclick="adjustCreatinine(0.1)" class="flex-1 py-1.5 bg-slate-100 hover:bg-slate-200 rounded-lg text-xs font-bold text-slate-600 transition-colors">+0.1</button>
+                        </div>
+                    </div>
+
+                </form>
+            </div>
+
+            <div class="pt-6 border-t border-slate-100 mt-6">
+                <button type="button" onclick="resetForm()" class="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-600 font-semibold text-sm transition-colors">
+                    <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+                    <span>Restablecer Calculadora</span>
+                </button>
+            </div>
+        </section>
+
+        <!-- Results & KDIGO Display (Right/Bottom) -->
+        <section class="md:col-span-6 lg:col-span-7 flex flex-col gap-6">
+
+            <!-- Result Card -->
+            <div id="resultCard" class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm transition-all duration-300">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Resultado Calculado</span>
+                    <span id="kdigoPill" class="hidden px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide">
+                        --
+                    </span>
+                </div>
+
+                <!-- Empty state vs Calculated state -->
+                <div id="emptyState" class="py-8 text-center text-slate-400">
+                    <i data-lucide="calculator" class="w-12 h-12 mx-auto mb-2 opacity-40"></i>
+                    <p class="text-sm font-medium">Ingresa los datos para obtener la TFG estimada</p>
+                </div>
+
+                <div id="resultState" class="hidden">
+                    <div class="flex items-baseline gap-2 my-2">
+                        <span id="tfgValue" class="text-5xl font-extrabold text-slate-900 tracking-tight">--</span>
+                        <span class="text-slate-500 font-semibold text-base">mL/min/1.73 m²</span>
+                    </div>
+
+                    <!-- Stage Description -->
+                    <div id="stageCard" class="mt-4 p-4 rounded-xl border">
+                        <div class="flex items-start gap-3">
+                            <div id="stageIconContainer" class="p-2 rounded-lg text-white mt-0.5">
+                                <i id="stageIcon" data-lucide="activity" class="w-5 h-5"></i>
+                            </div>
+                            <div>
+                                <h3 id="stageTitle" class="font-bold text-slate-900 text-sm">--</h3>
+                                <p id="stageDescription" class="text-xs text-slate-600 mt-1 leading-relaxed">--</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- KDIGO Reference Table Visual Grid -->
+            <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm">
+                <h3 class="text-sm font-bold text-slate-800 mb-3 flex items-center justify-between">
+                    <span>Categorías de TFG según KDIGO</span>
+                    <span class="text-xs font-normal text-slate-400">Guías KDIGO</span>
+                </h3>
+
+                <div class="space-y-2" id="kdigoList">
+                    <!-- G1 -->
+                    <div id="kdigo-G1" class="kdigo-badge p-2.5 rounded-xl border border-slate-100 flex items-center justify-between text-xs transition-all">
+                        <div class="flex items-center gap-2.5">
+                            <span class="w-8 h-8 rounded-lg bg-emerald-500 text-white font-bold flex items-center justify-center text-xs shadow-sm">G1</span>
+                            <div>
+                                <p class="font-bold text-slate-800">Normal o Alto</p>
+                                <p class="text-slate-500 text-[11px]">≥ 90 mL/min/1.73 m²</p>
+                            </div>
+                        </div>
+                        <i data-lucide="chevron-right" class="w-4 h-4 text-slate-300 indicator hidden"></i>
+                    </div>
+
+                    <!-- G2 -->
+                    <div id="kdigo-G2" class="kdigo-badge p-2.5 rounded-xl border border-slate-100 flex items-center justify-between text-xs transition-all">
+                        <div class="flex items-center gap-2.5">
+                            <span class="w-8 h-8 rounded-lg bg-lime-500 text-white font-bold flex items-center justify-center text-xs shadow-sm">G2</span>
+                            <div>
+                                <p class="font-bold text-slate-800">Ligeramente Disminuido</p>
+                                <p class="text-slate-500 text-[11px]">60 - 89 mL/min/1.73 m²</p>
+                            </div>
+                        </div>
+                        <i data-lucide="chevron-right" class="w-4 h-4 text-slate-300 indicator hidden"></i>
+                    </div>
+
+                    <!-- G3a -->
+                    <div id="kdigo-G3a" class="kdigo-badge p-2.5 rounded-xl border border-slate-100 flex items-center justify-between text-xs transition-all">
+                        <div class="flex items-center gap-2.5">
+                            <span class="w-8 h-8 rounded-lg bg-amber-500 text-white font-bold flex items-center justify-center text-xs shadow-sm">G3a</span>
+                            <div>
+                                <p class="font-bold text-slate-800">Lera a Moderadamente Disminuido</p>
+                                <p class="text-slate-500 text-[11px]">45 - 59 mL/min/1.73 m²</p>
+                            </div>
+                        </div>
+                        <i data-lucide="chevron-right" class="w-4 h-4 text-slate-300 indicator hidden"></i>
+                    </div>
+
+                    <!-- G3b -->
+                    <div id="kdigo-G3b" class="kdigo-badge p-2.5 rounded-xl border border-slate-100 flex items-center justify-between text-xs transition-all">
+                        <div class="flex items-center gap-2.5">
+                            <span class="w-8 h-8 rounded-lg bg-orange-500 text-white font-bold flex items-center justify-center text-xs shadow-sm">G3b</span>
+                            <div>
+                                <p class="font-bold text-slate-800">Moderada a Gravemente Disminuido</p>
+                                <p class="text-slate-500 text-[11px]">30 - 44 mL/min/1.73 m²</p>
+                            </div>
+                        </div>
+                        <i data-lucide="chevron-right" class="w-4 h-4 text-slate-300 indicator hidden"></i>
+                    </div>
+
+                    <!-- G4 -->
+                    <div id="kdigo-G4" class="kdigo-badge p-2.5 rounded-xl border border-slate-100 flex items-center justify-between text-xs transition-all">
+                        <div class="flex items-center gap-2.5">
+                            <span class="w-8 h-8 rounded-lg bg-red-500 text-white font-bold flex items-center justify-center text-xs shadow-sm">G4</span>
+                            <div>
+                                <p class="font-bold text-slate-800">Gravemente Disminuido</p>
+                                <p class="text-slate-500 text-[11px]">15 - 29 mL/min/1.73 m²</p>
+                            </div>
+                        </div>
+                        <i data-lucide="chevron-right" class="w-4 h-4 text-slate-300 indicator hidden"></i>
+                    </div>
+
+                    <!-- G5 -->
+                    <div id="kdigo-G5" class="kdigo-badge p-2.5 rounded-xl border border-slate-100 flex items-center justify-between text-xs transition-all">
+                        <div class="flex items-center gap-2.5">
+                            <span class="w-8 h-8 rounded-lg bg-rose-900 text-white font-bold flex items-center justify-center text-xs shadow-sm">G5</span>
+                            <div>
+                                <p class="font-bold text-slate-800">Fallo Renal</p>
+                                <p class="text-slate-500 text-[11px]">&lt; 15 mL/min/1.73 m²</p>
+                            </div>
+                        </div>
+                        <i data-lucide="chevron-right" class="w-4 h-4 text-slate-300 indicator hidden"></i>
+                    </div>
+
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-200 mt-8 py-4">
+        <div class="max-w-4xl mx-auto px-4 text-center text-xs text-slate-400">
+            <p class="mb-1">Basado en la ecuación refinada CKD-EPI 2021 (Inker LA et al. N Engl J Med 2021).</p>
+            <p>Herramienta con fines informativos y de apoyo educativo médico. No sustituye la valoración médica profesional.</p>
+            <p class="mt-2 font-medium text-slate-500">Herramienta elaborada por Dr. Juan Pablo Aldana Sulú</p>
+        </div>
+    </footer>
+
+    <script>
+        // State variables
+        let selectedSex = 'female'; // default
+
+        // Initialize icons on DOM load
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            selectSex('female'); // Initialize UI selection
+        });
+
+        // Function to select biological sex
+        function selectSex(sex) {
+            selectedSex = sex;
+            const btnFemale = document.getElementById('btnFemale');
+            const btnMale = document.getElementById('btnMale');
+
+            if (sex === 'female') {
+                btnFemale.className = "flex items-center justify-center gap-2 py-3 px-4 rounded-xl border-2 font-semibold transition-all bg-pink-50 border-pink-500 text-pink-700 shadow-sm";
+                btnMale.className = "flex items-center justify-center gap-2 py-3 px-4 rounded-xl border-2 font-medium transition-all text-slate-600 border-slate-200 hover:border-slate-300 bg-white";
+            } else {
+                btnMale.className = "flex items-center justify-center gap-2 py-3 px-4 rounded-xl border-2 font-semibold transition-all bg-sky-50 border-sky-500 text-sky-700 shadow-sm";
+                btnFemale.className = "flex items-center justify-center gap-2 py-3 px-4 rounded-xl border-2 font-medium transition-all text-slate-600 border-slate-200 hover:border-slate-300 bg-white";
+            }
+
+            calculateTFG();
+        }
+
+        // Quick adjuster for Creatinine value
+        function adjustCreatinine(delta) {
+            const input = document.getElementById('creatinine');
+            let val = parseFloat(input.value) || 0.90;
+            val = Math.max(0.1, Math.min(15, val + delta));
+            input.value = val.toFixed(2);
+            calculateTFG();
+        }
+
+        // Main calculation logic using CKD-EPI 2021 formula
+        function calculateTFG() {
+            const ageInput = document.getElementById('age').value;
+            const scrInput = document.getElementById('creatinine').value;
+
+            const age = parseFloat(ageInput);
+            const scr = parseFloat(scrInput);
+
+            const emptyState = document.getElementById('emptyState');
+            const resultState = document.getElementById('resultState');
+            const kdigoPill = document.getElementById('kdigoPill');
+
+            // Validate inputs
+            if (!age || isNaN(age) || age < 18 || age > 120 || !scr || isNaN(scr) || scr <= 0) {
+                emptyState.classList.remove('hidden');
+                resultState.classList.add('hidden');
+                kdigoPill.classList.add('hidden');
+                resetHighlightKDIGO();
+                return;
+            }
+
+            // CKD-EPI 2021 Formula Calculation
+            let eGFR = 0;
+            let kappa = selectedSex === 'female' ? 0.7 : 0.9;
+            let alpha = selectedSex === 'female' ? -0.241 : -0.302;
+            let sexFactor = selectedSex === 'female' ? 1.012 : 1.0;
+
+            if (scr / kappa <= 1) {
+                eGFR = 142 * Math.pow(scr / kappa, alpha) * Math.pow(0.9938, age) * sexFactor;
+            } else {
+                eGFR = 142 * Math.pow(scr / kappa, -1.200) * Math.pow(0.9938, age) * sexFactor;
+            }
+
+            // Round to whole number or 1 decimal place
+            const roundedGFR = Math.round(eGFR);
+
+            // Update UI
+            emptyState.classList.add('hidden');
+            resultState.classList.remove('hidden');
+            document.getElementById('tfgValue').textContent = roundedGFR;
+
+            // Determine KDIGO category
+            updateKDIGOCategory(roundedGFR);
+        }
+
+        // KDIGO Stage specifications and UI update
+        function updateKDIGOCategory(gfr) {
+            let cat = '';
+            let stageInfo = {};
+
+            if (gfr >= 90) {
+                cat = 'G1';
+                stageInfo = {
+                    title: 'G1 - Función Renal Normal o Elevada',
+                    desc: 'Función renal preservada. En ausencia de marcadores de daño renal (como proteinuria o hematuria), no se considera enfermedad renal crónica.',
+                    bgClass: 'bg-emerald-500',
+                    pillClass: 'bg-emerald-100 text-emerald-800 border-emerald-300',
+                    cardBorder: 'border-emerald-200 bg-emerald-50/50',
+                    icon: 'check-circle'
+                };
+            } else if (gfr >= 60) {
+                cat = 'G2';
+                stageInfo = {
+                    title: 'G2 - Ligeramente Disminuido',
+                    desc: 'Disminución leve de la filtración glomerular. Frecuente en adultos mayores. Evaluar riesgo cardiovascular y control de presión arterial.',
+                    bgClass: 'bg-lime-500',
+                    pillClass: 'bg-lime-100 text-lime-800 border-lime-300',
+                    cardBorder: 'border-lime-200 bg-lime-50/50',
+                    icon: 'alert-circle'
+                };
+            } else if (gfr >= 45) {
+                cat = 'G3a';
+                stageInfo = {
+                    title: 'G3a - Leve a Moderadamente Disminuido',
+                    desc: 'Enfermedad renal crónica moderada. Se recomienda monitorear la progresión, ajustar dosis de medicamentos de eliminación renal y controlar factores de riesgo.',
+                    bgClass: 'bg-amber-500',
+                    pillClass: 'bg-amber-100 text-amber-800 border-amber-300',
+                    cardBorder: 'border-amber-200 bg-amber-50/50',
+                    icon: 'alert-triangle'
+                };
+            } else if (gfr >= 30) {
+                cat = 'G3b';
+                stageInfo = {
+                    title: 'G3b - Moderada a Gravemente Disminuido',
+                    desc: 'Disminución moderada-grave. Incremento de complicaciones metabólicas (anemia, hiperparatiroidismo). Se aconseja evaluación o seguimiento por Nefrología.',
+                    bgClass: 'bg-orange-500',
+                    pillClass: 'bg-orange-100 text-orange-800 border-orange-300',
+                    cardBorder: 'border-orange-200 bg-orange-50/50',
+                    icon: 'alert-octagon'
+                };
+            } else if (gfr >= 15) {
+                cat = 'G4';
+                stageInfo = {
+                    title: 'G4 - Gravemente Disminuido',
+                    desc: 'Reducción severa de la función renal. Preparación activa para terapia de reemplazo renal (diálisis/trasplante) y manejo estrecho con especialista nefriólogo.',
+                    bgClass: 'bg-red-500',
+                    pillClass: 'bg-red-100 text-red-800 border-red-300',
+                    cardBorder: 'border-red-200 bg-red-50/50',
+                    icon: 'shield-alert'
+                };
+            } else {
+                cat = 'G5';
+                stageInfo = {
+                    title: 'G5 - Falla Renal / Terminal',
+                    desc: 'Insuficiencia renal terminal. Terapia de reemplazo renal o cuidados conservadores según criterio del equipo nefrológico.',
+                    bgClass: 'bg-rose-900',
+                    pillClass: 'bg-rose-100 text-rose-900 border-rose-300',
+                    cardBorder: 'border-rose-200 bg-rose-50/50',
+                    icon: 'x-circle'
+                };
+            }
+
+            // Update Header Pill
+            const kdigoPill = document.getElementById('kdigoPill');
+            kdigoPill.textContent = `Categoría ${cat}`;
+            kdigoPill.className = `px-3 py-1 rounded-full text-xs font-extrabold uppercase border ${stageInfo.pillClass}`;
+            kdigoPill.classList.remove('hidden');
+
+            // Update Stage Detail Card
+            const stageCard = document.getElementById('stageCard');
+            stageCard.className = `mt-4 p-4 rounded-xl border transition-all ${stageInfo.cardBorder}`;
+
+            document.getElementById('stageTitle').textContent = stageInfo.title;
+            document.getElementById('stageDescription').textContent = stageInfo.desc;
+
+            const iconContainer = document.getElementById('stageIconContainer');
+            iconContainer.className = `p-2 rounded-lg text-white mt-0.5 ${stageInfo.bgClass}`;
+            
+            // Highlight in reference list
+            highlightKDIGO(cat);
+        }
+
+        // Highlight active KDIGO category item in the list
+        function highlightKDIGO(activeCat) {
+            const categories = ['G1', 'G2', 'G3a', 'G3b', 'G4', 'G5'];
+
+            categories.forEach(cat => {
+                const elem = document.getElementById(`kdigo-${cat}`);
+                const indicator = elem.querySelector('.indicator');
+
+                if (cat === activeCat) {
+                    elem.className = "kdigo-badge p-3 rounded-xl border-2 border-sky-500 bg-sky-50/60 shadow-md ring-2 ring-sky-200 flex items-center justify-between text-xs transition-all scale-[1.02]";
+                    if (indicator) indicator.classList.remove('hidden');
+                } else {
+                    elem.className = "kdigo-badge p-2.5 rounded-xl border border-slate-100 flex items-center justify-between text-xs transition-all opacity-60 hover:opacity-100";
+                    if (indicator) indicator.classList.add('hidden');
+                }
+            });
+        }
+
+        // Reset list highlighting
+        function resetHighlightKDIGO() {
+            const categories = ['G1', 'G2', 'G3a', 'G3b', 'G4', 'G5'];
+            categories.forEach(cat => {
+                const elem = document.getElementById(`kdigo-${cat}`);
+                const indicator = elem.querySelector('.indicator');
+                if (elem) {
+                    elem.className = "kdigo-badge p-2.5 rounded-xl border border-slate-100 flex items-center justify-between text-xs transition-all";
+                }
+                if (indicator) indicator.classList.add('hidden');
+            });
+        }
+
+        // Reset full form
+        function resetForm() {
+            document.getElementById('age').value = '';
+            document.getElementById('creatinine').value = '';
+            selectSex('female');
+            calculateTFG();
+        }
+    </script>
+</body>
+</html>
